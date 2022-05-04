@@ -1,5 +1,31 @@
-import { Channel, Client, CommandInteraction, GuildMember, GuildTextBasedChannel, Interaction, InteractionReplyOptions, Message, Permissions, Snowflake, TextChannel, VoiceChannel } from "discord.js";
-import { AudioPlayer, AudioPlayerStatus, AudioResource, createAudioPlayer, createAudioResource, entersState, getVoiceConnection, joinVoiceChannel, StreamType, VoiceConnectionStatus } from "@discordjs/voice";
+import {
+  Channel,
+  Client,
+  CommandInteraction,
+  GuildMember,
+  GuildTextBasedChannel,
+  Interaction,
+  InteractionReplyOptions,
+  Message,
+  MessageActionRow,
+  MessageEmbed,
+  Permissions,
+  Snowflake,
+  TextChannel,
+  VoiceChannel,
+} from "discord.js";
+import {
+  AudioPlayer,
+  AudioPlayerStatus,
+  AudioResource,
+  createAudioPlayer,
+  createAudioResource,
+  entersState,
+  getVoiceConnection,
+  joinVoiceChannel,
+  StreamType,
+  VoiceConnectionStatus,
+} from "@discordjs/voice";
 import dotenv from "dotenv";
 import Text from "./text";
 import { EventEmitter } from "./eventemitter";
@@ -10,18 +36,26 @@ import yts from "yt-search";
 import { Playing } from "./util";
 import { Queue, GuildState, LoopMap, LoopMode, LoopNum } from "./static";
 
-const reply = (interaction: CommandInteraction, content: string, options?: InteractionReplyOptions): Promise<Message> => {
-  return interaction.reply({ content, fetchReply: true, ...options }) as unknown as Promise<Message>;
+const reply = (
+  interaction: CommandInteraction,
+  content: string | null,
+  options?: InteractionReplyOptions
+): Promise<Message> => {
+  return interaction.reply({
+    content,
+    fetchReply: true,
+    ...options,
+  }) as unknown as Promise<Message>;
 };
 
 const edit = (message: Message, content: string, options?: MessageOptions) => {
   return message.edit({ content, ...options }) as Promise<Message>;
-}
+};
 
 const isVoice = (channel: unknown): channel is VoiceChannel => {
   if (channel instanceof VoiceChannel) return true;
   return false;
-}
+};
 
 const states: Map<Snowflake, GuildState> = new Map();
 
@@ -29,7 +63,10 @@ class Bot extends EventEmitter {
   public client: Client;
   public constructor() {
     super();
-    this.client = new Client({ intents: 32509, allowedMentions: { parse: [], repliedUser: false } });
+    this.client = new Client({
+      intents: 32509,
+      allowedMentions: { parse: [], repliedUser: false },
+    });
     dotenv.config();
   }
   public start() {
@@ -37,7 +74,7 @@ class Bot extends EventEmitter {
     this.client.on("ready", () => {
       this.emit("ready", this.client);
     });
-    this.client.on("interactionCreate", (i) => this.interactionCreate(i))
+    this.client.on("interactionCreate", (i) => this.interactionCreate(i));
   }
   private async interactionCreate(i: Interaction) {
     if (i.isCommand()) {
@@ -47,11 +84,16 @@ class Bot extends EventEmitter {
         return;
       }
       const selfPerm = i.channel?.permissionsFor(i.guild.me as GuildMember);
-      if (!selfPerm?.has(Permissions.FLAGS.VIEW_CHANNEL) || !selfPerm.has(Permissions.FLAGS.SEND_MESSAGES)) {
-        reply(i, Text["bot.command.errors.botNoPermission"], { ephemeral: true });
+      if (
+        !selfPerm?.has(Permissions.FLAGS.VIEW_CHANNEL) ||
+        !selfPerm.has(Permissions.FLAGS.SEND_MESSAGES)
+      ) {
+        reply(i, Text["bot.command.errors.botNoPermission"], {
+          ephemeral: true,
+        });
         return;
       }
-      if (command === "leave" || command === "loop" || command === "volume") {
+      if (command === "leave" || command === "loop" || command === "volume" || command === "queue") {
         if (!states.get(i.guild.id)) {
           reply(i, Text["bot.command.errors.notInVoice"], { ephemeral: true });
           return;
@@ -73,11 +115,21 @@ class Bot extends EventEmitter {
         case "volume":
           this.volume(i);
           break;
+        case "queue":
+          this.queue(i);
+          break;
+        case "skip":
+          this.skip(i);
+          break;
       }
     }
   }
   private _join(channel: VoiceChannel): GuildState {
-    if (!channel.permissionsFor(channel.guild.me as GuildMember).has(Permissions.FLAGS.CONNECT)) {
+    if (
+      !channel
+        .permissionsFor(channel.guild.me as GuildMember)
+        .has(Permissions.FLAGS.CONNECT)
+    ) {
       throw new Error("Bot has no permissions to join this channel");
     }
     const connection = joinVoiceChannel({
@@ -101,15 +153,21 @@ class Bot extends EventEmitter {
   private async join(i: CommandInteraction<"cached">) {
     const channel = i.member.voice.channel || i.options.getChannel("channel");
     if (!channel) {
-      return reply(i, Text["bot.command.errors.notInVoice"], { ephemeral: true });
+      return reply(i, Text["bot.command.errors.notInVoice"], {
+        ephemeral: true,
+      });
     }
     if (!isVoice(channel)) {
-      return reply(i, Text["bot.command.errors.invalidChannelType"], { ephemeral: true });
+      return reply(i, Text["bot.command.errors.invalidChannelType"], {
+        ephemeral: true,
+      });
     }
     if (states.get(channel.guild.id)?.player) {
-      return reply(i, Text["bot.command.errors.alreadyInVoice"], { ephemeral: true });
+      return reply(i, Text["bot.command.errors.alreadyInVoice"], {
+        ephemeral: true,
+      });
     }
-    
+
     const msg = await reply(i, Text["bot.command.joiningText"]);
     try {
       this._join(channel);
@@ -120,10 +178,11 @@ class Bot extends EventEmitter {
     }
   }
   private async leave(i: CommandInteraction<"cached">) {
-    
     const state = states.get(i.guild.id);
     if (!state) {
-      return reply(i, Text["bot.command.errors.notInVoice"], { ephemeral: true });
+      return reply(i, Text["bot.command.errors.notInVoice"], {
+        ephemeral: true,
+      });
     }
     const msg = await reply(i, Text["bot.command.leavingText"]);
     const connection = getVoiceConnection(state.id);
@@ -131,7 +190,10 @@ class Bot extends EventEmitter {
     states.delete(i.guild.id);
     await edit(msg, Text["bot.command.leftText"]);
   }
-  private async _play(guildId: string, channel: GuildTextBasedChannel): Promise<any> {
+  private async _play(
+    guildId: string,
+    channel: GuildTextBasedChannel
+  ): Promise<any> {
     const state = states.get(guildId);
     if (!state) {
       throw new Error("No state found");
@@ -147,21 +209,27 @@ class Bot extends EventEmitter {
     }
     const player = state.player;
     const stream = ytdl(current.url, {
-      filter: (format) => format.audioCodec === 'opus' && format.container === 'webm',
-      quality: 'highest',
+      filter: (format) =>
+        format.audioCodec === "opus" && format.container === "webm",
+      quality: "highest",
       highWaterMark: 32 * 1024 * 1024,
     });
     const resource = createAudioResource(stream, {
       inputType: StreamType.WebmOpus,
-      inlineVolume: true
+      inlineVolume: true,
     });
     resource.volume?.setVolume(Math.round(state.volume / 10) / 10);
     state.resource = resource;
     player.play(resource);
     await channel.send({
       embeds: [
-        Playing(state.queue[0].title, state.queue[0].url, state.queue[0].thumbnail, state.queue[0].views)
-      ]
+        Playing(
+          state.queue[0].title,
+          state.queue[0].url,
+          state.queue[0].thumbnail,
+          state.queue[0].views
+        ),
+      ],
     });
     await entersState(player, AudioPlayerStatus.Playing, 10 * 1000);
     this.emit("musicStart", current);
@@ -183,14 +251,20 @@ class Bot extends EventEmitter {
     let msg: Message;
     const query = i.options.getString("query");
     if (!query) {
-      return reply(i, Text["bot.command.errors.invalidArguments"], { ephemeral: true });
+      return reply(i, Text["bot.command.errors.invalidArguments"], {
+        ephemeral: true,
+      });
     }
     if (!state) {
       if (!i.member.voice.channel) {
-        return reply(i, Text["bot.command.errors.notInVoice"], { ephemeral: true });
+        return reply(i, Text["bot.command.errors.notInVoice"], {
+          ephemeral: true,
+        });
       }
       if (!isVoice(i.member.voice.channel)) {
-        return reply(i, Text["bot.command.errors.invalidChannelType"], { ephemeral: true });
+        return reply(i, Text["bot.command.errors.invalidChannelType"], {
+          ephemeral: true,
+        });
       }
       msg = await reply(i, Text["bot.command.joiningText"]);
       try {
@@ -217,6 +291,7 @@ class Bot extends EventEmitter {
         thumbnail: songInfo.videoDetails.thumbnails[0].url,
         time: Number(songInfo.videoDetails.lengthSeconds),
         views: Number(songInfo.videoDetails.viewCount),
+        description: songInfo.videoDetails.description,
       } as const;
       state.queue.push(song);
       states.set(i.guild.id, state);
@@ -231,13 +306,17 @@ class Bot extends EventEmitter {
           thumbnail: item.thumbnails[0].url as string,
           time: item.durationSec as number,
           index: item.index,
-          views: Number(viewcount.videoDetails.viewCount)
+          views: Number(viewcount.videoDetails.viewCount),
+          description: viewcount.videoDetails.description,
         };
         state.queue.push(song);
       }
       let times = 0;
-      songInfo.items.forEach(items => times += items.durationSec as number);
-      await edit(msg, Text["bot.command.addedToQueueMulti"](`${songInfo.estimatedItemCount}`));
+      songInfo.items.forEach((items) => (times += items.durationSec as number));
+      await edit(
+        msg,
+        Text["bot.command.addedToQueueMulti"](`${songInfo.estimatedItemCount}`)
+      );
     } else {
       const qqq = await isResult(query);
       if (!qqq) {
@@ -249,7 +328,8 @@ class Bot extends EventEmitter {
         url: songInfo.videoDetails.video_url,
         thumbnail: songInfo.videoDetails.thumbnails[0].url,
         time: Number(songInfo.videoDetails.lengthSeconds),
-        views: Number(songInfo.videoDetails.viewCount)
+        views: Number(songInfo.videoDetails.viewCount),
+        description: songInfo.videoDetails.description,
       };
       state.queue.push(song);
       await edit(msg, Text["bot.command.addedToQueueText"](song.title));
@@ -288,7 +368,39 @@ class Bot extends EventEmitter {
   private async queue(i: CommandInteraction<"cached">) {
     const state = states.get(i.guild.id) as GuildState;
     const queue = state.queue;
-    // TODO: Add pagination
+    await reply(i, null, {
+      embeds: [
+        new MessageEmbed()
+          .setTitle(Text["bot.embed.queues.title"])
+          .setColor("BLUE")
+          .setFooter({ text: Text["bot.embed.queues.footer"](queue.length) })
+          .setFields(queue.map((song, index) => {
+            return {
+              name: `${index + 1}. ${song.title}`,
+              value: `[${song.description?.slice(0, 50).replace(/(\r|\n)/g, " ") || Text["bot.embed.queues.noDescription"]}${song.description && song.description.length > 50 ? "...":""}](${song.url})\n\n${song.time}s`,
+            }
+          }))
+      ]
+    });
+  }
+  private async skip(i: CommandInteraction<"cached">) {
+    const state = states.get(i.guild.id) as GuildState;
+    const player = state.player;
+    if (!player) {
+      return;
+    }
+    if (state.queue.length === 0) {
+      return reply(i, Text["bot.command.errors.queueEmpty"]);
+    }
+    player.stop();
+    state.queue.shift();
+    states.set(i.guild.id, state);
+    if (state.queue.length === 0) {
+      return reply(i, Text["bot.command.skippedTextQueueEmpty"]);
+    } else {
+      this._play(i.guild.id, i.channel!);
+    }
+    return reply(i, Text["bot.command.skippedText"]);
   }
 }
 

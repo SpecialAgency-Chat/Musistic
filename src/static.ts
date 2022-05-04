@@ -1,4 +1,4 @@
-import { Snowflake } from "discord.js";
+import { Snowflake, MessageButton } from "discord.js";
 import { AudioPlayer, AudioResource } from "@discordjs/voice";
 
 interface Queue {
@@ -8,6 +8,7 @@ interface Queue {
   thumbnail: string;
   time: number;
   views: number;
+  description: string | null;
 }
 
 type LoopNum = 0 | 1 | 2;
@@ -26,6 +27,16 @@ interface GuildState {
   loop: LoopMode;
   volume: number;
   resource?: AudioResource;
-}
+};
+
+const back = (customId: string) => new MessageButton()
+  .setCustomId(customId)
+  .setEmoji("⬅️")
+  .setStyle("SECONDARY");
+
+const forward = (customId: string) => new MessageButton()
+  .setCustomId(customId)
+  .setEmoji("➡️️")
+  .setStyle("SECONDARY");
 
 export { Queue, GuildState, LoopMode, LoopNum, LoopMap };
