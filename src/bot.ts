@@ -34,7 +34,15 @@ import ytdl from "ytdl-core";
 import ytpl from "ytpl";
 import yts from "yt-search";
 import { Playing } from "./util";
-import { Queue, GuildState, LoopMap, LoopMode, LoopNum } from "./static";
+import {
+  Queue,
+  GuildState,
+  LoopMap,
+  LoopMode,
+  LoopNum,
+  paginationRow,
+} from "./static";
+import ms from "ms";
 
 const reply = (
   interaction: CommandInteraction,
@@ -93,7 +101,12 @@ class Bot extends EventEmitter {
         });
         return;
       }
-      if (command === "leave" || command === "loop" || command === "volume" || command === "queue") {
+      if (
+        command === "leave" ||
+        command === "loop" ||
+        command === "volume" ||
+        command === "queue"
+      ) {
         if (!states.get(i.guild.id)) {
           reply(i, Text["bot.command.errors.notInVoice"], { ephemeral: true });
           return;
@@ -368,19 +381,85 @@ class Bot extends EventEmitter {
   private async queue(i: CommandInteraction<"cached">) {
     const state = states.get(i.guild.id) as GuildState;
     const queue = state.queue;
-    await reply(i, null, {
+    const msg = await reply(i, null, {
       embeds: [
         new MessageEmbed()
           .setTitle(Text["bot.embed.queues.title"])
           .setColor("BLUE")
           .setFooter({ text: Text["bot.embed.queues.footer"](queue.length) })
-          .setFields(queue.map((song, index) => {
-            return {
-              name: `${index + 1}. ${song.title}`,
-              value: `[${song.description?.slice(0, 50).replace(/(\r|\n)/g, " ") || Text["bot.embed.queues.noDescription"]}${song.description && song.description.length > 50 ? "...":""}](${song.url})\n\n${song.time}s`,
-            }
-          }))
-      ]
+          .setFields(
+            queue.slice(0, 10).map((song, index) => {
+              return {
+                name: `${index + 1}. ${song.title}`,
+                value: `[${
+                  song.description?.slice(0, 50).replace(/(\r|\n)/g, " ") ||
+                  Text["bot.embed.queues.noDescription"]
+                }${
+                  song.description && song.description.length > 50 ? "..." : ""
+                }](${song.url})\n${song.time}s`,
+              };
+            })
+          ),
+      ],
+      components: [paginationRow("queue")],
+    });
+    const collector = msg.createMessageComponentCollector({
+      componentType: "BUTTON",
+      time: ms("2m"),
+    });
+    collector.on("collect", (c) => {
+      const songs = state.queue;
+      const page = Number(c.message.embeds[0].fields?.at(0)?.name.split(".")[0].length === 1 ? 1:c.message.embeds[0].fields?.at(0)?.name.split(".")[0].slice(-1));
+      console.log(page);
+      if (c.customId.endsWith("backward")) {
+        if (page === 1) {
+          return c.deferUpdate();
+        }
+        const newPage = page - 1;
+        const newSongs = songs.slice(newPage * 10, (newPage + 1) * 10);
+        const newEmbed = new MessageEmbed()
+          .setTitle(Text["bot.embed.queues.title"])
+          .setColor("BLUE")
+          .setFooter({ text: Text["bot.embed.queues.footer"](newSongs.length) })
+          .setFields(
+            newSongs.map((song, index) => {
+              return {
+                name: `${index + 1 + (newPage - 1) * 10}. ${song.title}`,
+                value: `[${
+                  song.description?.slice(0, 50).replace(/(\r|\n)/g, " ") ||
+                  Text["bot.embed.queues.noDescription"]
+                }${
+                  song.description && song.description.length > 50 ? "..." : ""
+                }](${song.url})\n${song.time}s`,
+              };
+            })
+          );
+        c.update({ embeds: [newEmbed] });
+      } else if (c.customId.endsWith("forward")) {
+        if (page === Math.ceil(songs.length / 10)) {
+          return c.deferUpdate();
+        }
+        const newPage = page + 1;
+        const newSongs = songs.slice((newPage - 1) * 10, (newPage) * 10);
+        const newEmbed = new MessageEmbed()
+          .setTitle(Text["bot.embed.queues.title"])
+          .setColor("BLUE")
+          .setFooter({ text: Text["bot.embed.queues.footer"](songs.length) })
+          .setFields(
+            newSongs.map((song, index) => {
+              return {
+                name: `${index + 1 + (newPage - 1) * 10}. ${song.title}`,
+                value: `[${
+                  song.description?.slice(0, 50).replace(/(\r|\n)/g, " ") ||
+                  Text["bot.embed.queues.noDescription"]
+                }${
+                  song.description && song.description.length > 50 ? "..." : ""
+                }](${song.url})\n${song.time}s`,
+              };
+            })
+          );
+        c.update({ embeds: [newEmbed] });
+      }
     });
   }
   private async skip(i: CommandInteraction<"cached">) {

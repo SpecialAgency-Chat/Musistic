@@ -89,7 +89,11 @@ dotenv.config();
     {
       name: "queue",
       description: Text["slash.command.queueDescription"],
-    }
+    },
+    {
+      name: "pause",
+      description: Text["slash.command.pauseDescription"],
+    },
   ], process.argv[2]);
   console.log("Done");
 })();

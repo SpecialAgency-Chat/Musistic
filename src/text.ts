@@ -38,6 +38,10 @@ const data = {
   "bot.embed.playing.footer": (viewCount: number) => `Views: ${viewCount}`,
   "bot.embed.queues.title": "Queues",
   "bot.embed.queues.footer": (totalQueue: number) => `${totalQueue} Songs`,
+  "bot.embed.queues.decomposeFooterTotalQueue": (footer: string): number => {
+    const [totalQueue] = footer.split(" ");
+    return Number(totalQueue);
+  },
   "bot.embed.queues.noDescription": "No description",
   // Slash Command Text
   "slash.command.joinDescription": "Joins the voice channel you are currently in or the channel specified by the argument",
@@ -51,6 +55,8 @@ const data = {
   "slash.command.volumeArguments": "Volume to set",
   "slash.command.skipDescription": "Skips the currently playing song",
   "slash.command.queueDescription": "Shows the queue",
+  "slash.command.pauseDescription": "Pauses the player",
+  "slash.command.resumeDescription": "Resumes the player",
 } as const;
 
 export default data;

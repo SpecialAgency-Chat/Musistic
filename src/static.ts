@@ -1,4 +1,4 @@
-import { Snowflake, MessageButton } from "discord.js";
+import { Snowflake, MessageButton, MessageActionRow } from "discord.js";
 import { AudioPlayer, AudioResource } from "@discordjs/voice";
 
 interface Queue {
@@ -29,14 +29,17 @@ interface GuildState {
   resource?: AudioResource;
 };
 
-const back = (customId: string) => new MessageButton()
-  .setCustomId(customId)
+const backward = (customId: string) => new MessageButton()
+  .setCustomId(customId + "-backward")
   .setEmoji("⬅️")
   .setStyle("SECONDARY");
 
 const forward = (customId: string) => new MessageButton()
-  .setCustomId(customId)
-  .setEmoji("➡️️")
+  .setCustomId(customId + "-forward")
+  .setEmoji("➡️")
   .setStyle("SECONDARY");
 
-export { Queue, GuildState, LoopMode, LoopNum, LoopMap };
+const paginationRow = (customId: string) => new MessageActionRow()
+  .addComponents([backward(customId), forward(customId)]);
+
+export { Queue, GuildState, LoopMode, LoopNum, LoopMap, paginationRow, backward, forward };
