@@ -134,6 +134,12 @@ class Bot extends EventEmitter {
         case "skip":
           this.skip(i);
           break;
+        case "pause":
+          this.pause(i);
+          break;
+        case "resume":
+          this.resume(i);
+          break;
       }
     }
   }
@@ -409,18 +415,18 @@ class Bot extends EventEmitter {
     });
     collector.on("collect", (c) => {
       const songs = state.queue;
-      const page = Number(c.message.embeds[0].fields?.at(0)?.name.split(".")[0].length === 1 ? 1:c.message.embeds[0].fields?.at(0)?.name.split(".")[0].slice(-1));
+      const page = Number(c.message.embeds[0].fields?.at(0)?.name.split(".")[0].length === 1 ? 1:Number(c.message.embeds[0].fields?.at(0)?.name.split(".")[0].slice(0, 1)) + 1);
       console.log(page);
       if (c.customId.endsWith("backward")) {
         if (page === 1) {
           return c.deferUpdate();
         }
         const newPage = page - 1;
-        const newSongs = songs.slice(newPage * 10, (newPage + 1) * 10);
+        const newSongs = songs.slice((newPage - 1) * 10, (newPage) * 10);
         const newEmbed = new MessageEmbed()
           .setTitle(Text["bot.embed.queues.title"])
           .setColor("BLUE")
-          .setFooter({ text: Text["bot.embed.queues.footer"](newSongs.length) })
+          .setFooter({ text: Text["bot.embed.queues.footer"](songs.length) })
           .setFields(
             newSongs.map((song, index) => {
               return {
@@ -480,6 +486,32 @@ class Bot extends EventEmitter {
       this._play(i.guild.id, i.channel!);
     }
     return reply(i, Text["bot.command.skippedText"]);
+  }
+  private async pause(i: CommandInteraction<"cached">) {
+    const state = states.get(i.guild.id) as GuildState;
+    const player = state.player;
+    if (!player) {
+      return;
+    }
+    const st = player.pause();
+    if (st) {
+      return reply(i, Text["bot.command.pausedText"]);
+    } else {
+      return reply(i, Text["bot.command.errors.notPaused"]);
+    }
+  }
+  private async resume(i: CommandInteraction<"cached">) {
+    const state = states.get(i.guild.id) as GuildState;
+    const player = state.player;
+    if (!player) {
+      return;
+    }
+    const st = player.unpause();
+    if (st) {
+      return reply(i, Text["bot.command.resumedText"]);
+    } else {
+      return reply(i, Text["bot.command.errors.notResumed"]);
+    }
   }
 }
 
