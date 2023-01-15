@@ -10,7 +10,12 @@
     "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
     "moduleResolution": "node",
     "strict": true,                                     /* Enable all strict type-checking options. */
-    "module": "CommonJS"
+    "module": "CommonJS",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "resolveJsonModule": true
   },
-  "include": ["src"]
+  "exclude": ["dist"]
 }

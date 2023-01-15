@@ -5,6 +5,8 @@ import path from "path";
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import configLogger from "./logger";
 import log4js from "log4js";
+import { i18n } from "./manager";
+import config from "@/config.json";
 
 // one liner sleep
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -25,6 +27,14 @@ class Musistic extends Client {
     configLogger();
   }
 
+  public set ready(isReady: boolean) {
+    this._ready = isReady;
+  }
+
+  public get ready(): boolean {
+    return this._ready;
+  }
+
   async start() {
   console.log(
     chalk.cyan(
@@ -35,27 +45,21 @@ class Musistic extends Client {
     )
   );
   console.log("\n");
-  let o = ora(Text["core.loading"]).start();
+  let o = ora(i18n.t(config.defaultLanguage, "core.loading")).start();
   o.color = "blue";
-  o = ora(Text["core.loadingBotToken"]);
-  o.color = "green";
-  o.start();
-  await sleep(200);
   if (!process.env.BOT_TOKEN) {
-    o.fail(Text["core.errors.noBotToken"]);
+    o.fail(i18n.t(config.defaultLanguage, "errors.noBotToken"));
     process.exit(1);
   }
-  o.succeed(Text["core.foundBotToken"]);
-  await sleep(200);
-  o = ora(Text["core.launchingBot"]);
+  o = ora(i18n.t(config.defaultLanguage, "core.launchingBot"));
   o.color = "yellow";
   o.start();
-  bot.start();
-  bot.on("ready", (client: Client) => {
-    o.succeed(Text["core.launchedBot"](client.user!.tag));
-  })
+  
+  await import('@/events/error').then((i) =>
+    this.on('error', (arg) => new i.default(this).run(arg))
+  );
 }
 
 }
 
-export default Musistic;
+export { Musistic };

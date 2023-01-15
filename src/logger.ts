@@ -8,7 +8,7 @@ export default function configLogger(): void {
       },
       app: {
         type: 'dateFile',
-        filename: '~/logs/app.log',
+        filename: '@/logs/app.log',
         keepFileExt: true,
         pattern: 'yyyy-MM-dd',
         numBackups: 7,

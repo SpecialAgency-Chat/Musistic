@@ -1,0 +1,66 @@
+{
+  "errors": {
+    "noBotToken": "No Bot Token found! please add BOT_TOKEN in .env file",
+    "notInGuild": "This command can only be used in a guild!",
+    "notInVoice": "You must be in a voice channel to use this command!",
+    "noPermission": "You do not have permission to use this command!",
+    "botNoPermission": "I do not have permission to view channel or send messages!",
+    "cantJoin": "I can't join that voice channel!",
+    "invalidArguments": "Invalid arguments!",
+    "invalidChannelType": "Invalid channel type!",
+    "alreadyInVoice": "I am already in a voice channel!",
+    "notFound": "Not found!",
+    "queueEmpty": "Queue is empty!",
+    "notPaused": "I am not paused!",
+    "notResumed": "I am not resumed!"
+  },
+  "core": {
+    "loading": "Loading...",
+    "launchingBot": "Launching ..",
+    "launchedBot": "Bot Launched! Tag: {{tag}}"
+  },
+  "command": {
+    "joiningText": "Joining...",
+    "joinedText": "Joined!",
+    "joinedText.fromPlay": "Joined! Searching...",
+    "leavingText": "Leaving...",
+    "leftText": "Left!",
+    "searchingText": "Searching...",
+    "addedToQueueText": "**{{song}}** Added to queue!",
+    "addedToQueueMulti": "**{{num}}** Songs Added to queue!",
+    "loopedText": "Succesfully changed Loop mode: {{type}}",
+    "changedVolumeText": "Succesfully changed volume to {{volume}}%",
+    "skippedText": "Skipped!",
+    "skippedTextQueueEmpty": "Skipped. Queue is empty.",
+    "pausedText": "Paused!",
+    "resumedText": "Resumed!"
+  },
+  "embed": {
+    "playing": {
+      "author": "Now Playing",
+      "footer": "Views: {{viewCount}}"
+    },
+    "queues": {
+      "title": "Queues",
+      "footer": "{{totalQueue}} Songs",
+      "noDescription": "No description"
+    }
+  },
+  "slash": {
+    "command": {
+      "joinDescription": "Joins the voice channel you are currently in or the channel specified by the argument",
+      "joinArguments": "Channel to join",
+      "leaveDescription": "Leaves the voice channel I am currently in",
+      "playDescription": "Plays the song specified by the argument",
+      "playArguments": "Song to play (URL or Search Query)",
+      "loopDescription": "loops the currently playing song or the queue",
+      "loopArguments": "loop the current song or the queue",
+      "volumeDescription": "Changes the volume of the player",
+      "volumeArguments": "Volume to set",
+      "skipDescription": "Skips the currently playing song",
+      "queueDescription": "Shows the queue",
+      "pauseDescription": "Pauses the player",
+      "resumeDescription": "Resumes the player"
+    }
+  }
+}
